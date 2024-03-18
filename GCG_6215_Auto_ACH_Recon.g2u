@@ -1,0 +1,38 @@
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Customer: Universal Metal Products Inc
+'Developer: FEQ (Sisco)
+'Date: 12/08/2020
+'This program is intended to run once a day at night. The program will go and modify the AP_OPEN_ITEMS table.
+'All of their ACH transactions have check numbers starting with an A.
+
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String, "")
+V.Local.sSql.Declare(String, "")
+V.Local.sCurrDate.Declare(String, "")
+
+F.ODBC.Connection!conx.OpenCompanyConnection
+
+'We may need to change the date_Check
+F.Intrinsic.String.Format(V.Ambient.Date, "MMDDYY", V.Local.sCurrDate)
+'F.Intrinsic.String.Build("Update AP_OPEN_ITEMS set FLAG_CK_CLEARED = 'Y' where LEFT(CHECK_NUM, 1) = 'A' and BATCH_CODE = '11' and PAYMENT_SEQ = 'K' and DATE_BATCH = '{0}'", V.Local.sCurrDate, V.Local.sSql)
+
+'After testing, customer decided to remove the date restriction, since she uploads batches from bank
+V.Local.sSql.Set("Update AP_OPEN_ITEMS set FLAG_CK_CLEARED = 'Y' where LEFT(CHECK_NUM, 1) = 'A' and BATCH_CODE = '11' and PAYMENT_SEQ = 'K'")
+
+F.ODBC.Connection!conx.Execute(V.Local.sSql)
+
+F.Intrinsic.UI.Msgbox("ACH Open Items have been reconciled", "PROCESS COMPLETE")
+
+F.ODBC.Connection!conx.Close
+
+F.Intrinsic.Control.Catch
+
+F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Local.sError)
+
+F.Intrinsic.UI.Msgbox(V.Local.sError, "CRITICAL ERROR")
+
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
